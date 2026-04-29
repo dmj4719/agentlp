@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>キャリア診断チャットボット</title>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif; }
+
+/* ===== Floating Button ===== */
+.chatbot-toggle {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s;
+}
+.chatbot-toggle:hover { transform: scale(1.08); }
+.chatbot-toggle svg { width: 32px; height: 32px; fill: #fff; }
+.chatbot-toggle.active { display: none; }
+
+/* ===== Chat Window ===== */
+.chatbot-window {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 400px; max-width: calc(100vw - 32px);
+  height: 600px; max-height: calc(100vh - 48px);
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  display: none; flex-direction: column;
+  z-index: 10000; overflow: hidden;
+}
+.chatbot-window.open { display: flex; }
+
+/* Header */
+.chatbot-header {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chatbot-header-title { font-size: 15px; font-weight: 700; }
+.chatbot-header-sub { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+.chatbot-close {
+  background: none; border: none; color: #fff;
+  font-size: 24px; cursor: pointer; line-height: 1;
+}
+
+/* Messages Area */
+.chatbot-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: #f5f3ff;
+}
+.chatbot-messages::-webkit-scrollbar { width: 4px; }
+.chatbot-messages::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 2px; }
+
+/* Message Bubbles */
+.msg { max-width: 85%; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.msg-bot {
+  align-self: flex-start;
+  background: #fff; color: #1e1b4b;
+  padding: 12px 16px; border-radius: 4px 16px 16px 16px;
+  font-size: 14px; line-height: 1.7;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  white-space: pre-line;
+}
+.msg-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; padding: 10px 16px;
+  border-radius: 16px 4px 16px 16px;
+  font-size: 14px; line-height: 1.6;
+}
+
+/* Choice Buttons */
+.choices {
+  align-self: flex-start;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  max-width: 90%; animation: fadeIn 0.3s ease;
+}
+.choice-btn {
+  background: #fff; color: #4f46e5;
+  border: 1.5px solid #4f46e5;
+  padding: 8px 16px; border-radius: 20px;
+  font-size: 13px; cursor: pointer;
+  transition: all 0.15s; font-weight: 500;
+}
+.choice-btn:hover {
+  background: #4f46e5; color: #fff;
+}
+
+/* ===== Job Cards ===== */
+.job-cards-container {
+  align-self: stretch;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: fadeIn 0.4s ease;
+}
+.job-card {
+  background: #fff; border-radius: 14px;
+  padding: 16px; border-left: 4px solid #4f46e5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.job-card-title {
+  font-size: 15px; font-weight: 700; color: #1e1b4b;
+  margin-bottom: 4px;
+}
+.job-card-company {
+  font-size: 12px; color: #6b7280; margin-bottom: 10px;
+}
+.job-card-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.job-card-tag {
+  background: #ede9fe; color: #4f46e5;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: 500;
+}
+.job-card-salary {
+  margin-top: 8px; font-size: 14px; font-weight: 700; color: #7c3aed;
+}
+
+/* ===== Inline Form ===== */
+.chatbot-form {
+  align-self: stretch;
+  background: #fff; border-radius: 14px;
+  padding: 20px; animation: fadeIn 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.chatbot-form h3 {
+  font-size: 15px; font-weight: 700; color: #1e1b4b;
+  margin-bottom: 14px;
+}
+.form-group { margin-bottom: 12px; }
+.form-group label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: #374151; margin-bottom: 4px;
+}
+.form-group label .required {
+  color: #ef4444; margin-left: 4px; font-size: 11px;
+}
+.form-group input, .form-group textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #d1d5db; border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group textarea:focus {
+  outline: none; border-color: #4f46e5;
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-submit {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.form-submit:hover { opacity: 0.9; }
+.form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== Typing Indicator ===== */
+.typing { align-self: flex-start; display: flex; gap: 4px; padding: 12px 16px; }
+.typing span {
+  width: 8px; height: 8px; background: #a78bfa;
+  border-radius: 50%; animation: bounce 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-8px); }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+  .chatbot-window { bottom: 0; right: 0; width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
+  .chatbot-toggle { bottom: 16px; right: 16px; width: 56px; height: 56px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toggle Button -->
+<button class="chatbot-toggle" id="chatbotToggle" aria-label="チャットを開く">
+  <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
+</button>
+
+<!-- Chat Window -->
+<div class="chatbot-window" id="chatbotWindow">
+  <div class="chatbot-header">
+    <div>
+      <div class="chatbot-header-title">AIキャリアアドバイザー</div>
+      <div class="chatbot-header-sub">あなたに合った求人を診断します</div>
+    </div>
+    <button class="chatbot-close" id="chatbotClose">×</button>
+  </div>
+  <div class="chatbot-messages" id="chatbotMessages"></div>
+</div>
+
+<script>
+// ===== Job Card Data =====
+const JOB_CARDS = {
+  "300": {
+    "残業を減らしたい": [
+      { title: "Webディレクター", company: "ITベンチャー企業 / 東京・新宿", salary: "年収：320〜420万円", tags: ["残業月15h以下", "年間休日125日", "営業経験者歓迎"] },
+      { title: "カスタマーサクセス", company: "SaaS系企業 / 東京・渋谷", salary: "年収：350〜450万円", tags: ["残業月20h以下", "フレックスタイム制", "ノルマなし"] },
+      { title: "営業事務", company: "大手メーカー子会社 / 神奈川・横浜", salary: "年収：300〜380万円", tags: ["残業月10h以下", "完全週休2日制", "未経験歓迎"] }
+    ],
+    "リモート・在宅で働きたい": [
+      { title: "Webライター", company: "ITスタートアップ / 東京・渋谷", salary: "年収：300〜380万円", tags: ["週3回以上リモート可", "フレックスタイム制", "未経験歓迎"] },
+      { title: "インサイドセールス", company: "SaaS系企業 / 東京・新宿", salary: "年収：350〜450万円", tags: ["リモート週3回OK", "時短勤務可", "営業経験者歓迎"] },
+      { title: "データ入力・事務", company: "大手IT企業 / 東京・新宿", salary: "年収：300〜400万円", tags: ["リモート週2回OK", "完全週休2日制", "残業月10h以下"] }
+    ],
+    "やりがい・成長できる環境に移りたい": [
+      { title: "営業企画アシスタント", company: "成長期ベンチャー企業 / 東京・渋谷", salary: "年収：320〜420万円", tags: ["未経験歓迎", "研修制度充実", "年2回昇給あり"] },
+      { title: "カスタマーサポート", company: "自社サービス運営企業 / 東京・新宿", salary: "年収：300〜400万円", tags: ["未経験歓迎", "キャリアアップ制度あり", "社内公募制度あり"] },
+      { title: "法人営業", company: "急成長SaaS企業 / 東京・渋谷", salary: "年収：350〜450万円", tags: ["未経験歓迎", "研修3ヶ月あり", "インセンティブ支給あり"] }
+    ],
+    "大手・安定した企業に転職したい": [
+      { title: "営業事務", company: "東証プライム上場企業 / 東京・新宿", salary: "年収：300〜400万円", tags: ["設立30年以上", "完全週休2日制", "退職金制度あり"] },
+      { title: "一般事務", company: "大手メーカー / 神奈川・横浜", salary: "年収：320〜420万円", tags: ["従業員1000名以上", "年間休日125日", "産休・育休取得実績あり"] },
+      { title: "カスタマーサポート", company: "大手通信グループ企業 / 東京・品川", salary: "年収：350〜450万円", tags: ["設立20年以上", "完全週休2日制", "未経験歓迎"] }
+    ],
+    "営業以外の職種に挑戦したい": [
+      { title: "Webデザイナー", company: "ITベンチャー企業 / 東京・渋谷", salary: "年収：300〜400万円", tags: ["未経験歓迎", "研修制度3ヶ月あり", "リモート週2回OK"] },
+      { title: "ITエンジニア", company: "自社開発企業 / 東京・新宿", salary: "年収：350〜450万円", tags: ["未経験歓迎", "研修制度充実", "年2回昇給あり"] },
+      { title: "人事・採用アシスタント", company: "上場ベンチャー企業 / 東京・渋谷", salary: "年収：320〜420万円", tags: ["未経験歓迎", "営業経験者歓迎", "完全週休2日制"] }
+    ]
+  },
+  "450": {
+    "残業を減らしたい": [
+      { title: "マーケティング職", company: "大手消費財メーカー / 東京・品川", salary: "年収：450〜550万円", tags: ["残業月15h以下", "フレックスタイム制", "土日祝休み"] },
+      { title: "人事・採用担当", company: "上場IT企業 / 東京・渋谷", salary: "年収：480〜580万円", tags: ["残業月20h以下", "完全週休2日制", "リモート週3回OK"] },
+      { title: "経営企画", company: "中堅コンサルティング会社 / 東京・丸の内", salary: "年収：500〜600万円", tags: ["残業月15h以下", "年間休日125日", "裁量労働制"] }
+    ],
+    "リモート・在宅で働きたい": [
+      { title: "ITエンジニア", company: "自社開発SaaS企業 / フルリモート", salary: "年収：450〜600万円", tags: ["フルリモート可", "フレックスタイム制", "完全週休2日制"] },
+      { title: "カスタマーサクセス", company: "上場SaaS企業 / 東京・渋谷", salary: "年収：480〜580万円", tags: ["リモート週3回OK", "残業月15h以下", "インセンティブ支給あり"] },
+      { title: "広報・PR担当", company: "大手IT企業 / 東京・品川", salary: "年収：500〜600万円", tags: ["リモート週2回OK", "完全週休2日制", "年間休日125日"] }
+    ],
+    "やりがい・成長できる環境に移りたい": [
+      { title: "プロダクトマーケター", company: "自社開発SaaS企業 / 東京・渋谷", salary: "年収：480〜580万円", tags: ["裁量権の大きい環境", "年2回昇給あり", "リモート週2回OK"] },
+      { title: "新規事業開発", company: "上場ベンチャー企業 / 東京・品川", salary: "年収：500〜600万円", tags: ["新規事業立ち上げ制度あり", "社内公募制度あり", "ストックオプションあり"] },
+      { title: "法人営業チームリーダー", company: "急成長ITスタートアップ / 東京・渋谷", salary: "年収：450〜580万円", tags: ["マネージャー候補歓迎", "インセンティブ支給あり", "営業経験者歓迎"] }
+    ],
+    "大手・安定した企業に転職したい": [
+      { title: "法人営業", company: "東証プライム上場企業 / 東京・丸の内", salary: "年収：480〜580万円", tags: ["従業員5000名以上", "完全週休2日制", "退職金制度あり"] },
+      { title: "マーケティング担当", company: "大手消費財メーカー / 東京・品川", salary: "年収：500〜600万円", tags: ["設立50年以上", "年間休日125日", "リモート週2回OK"] },
+      { title: "人事・労務担当", company: "大手IT企業 / 東京・新宿", salary: "年収：450〜560万円", tags: ["従業員3000名以上", "フレックスタイム制", "産休・育休取得率80％"] }
+    ],
+    "営業以外の職種に挑戦したい": [
+      { title: "カスタマーサクセス", company: "上場SaaS企業 / 東京・渋谷", salary: "年収：450〜550万円", tags: ["営業経験者歓迎", "研修制度充実", "インセンティブ支給あり"] },
+      { title: "マーケティング担当", company: "成長期スタートアップ / 東京・品川", salary: "年収：480〜580万円", tags: ["未経験歓迎", "裁量権の大きい環境", "リモート週2回OK"] },
+      { title: "ITコンサルタント", company: "中堅コンサルティング会社 / 東京・丸の内", salary: "年収：500〜600万円", tags: ["営業経験者歓迎", "研修制度充実", "年2回昇給あり"] }
+    ]
+  },
+  "600": {
+    "残業を減らしたい": [
+      { title: "プロダクトマネージャー", company: "大手SaaS企業 / 東京・渋谷", salary: "年収：650〜850万円", tags: ["残業月20h以下", "フレックスタイム制", "リモート週3回OK"] },
+      { title: "営業マネージャー", company: "外資系メーカー / 東京・港区", salary: "年収：700〜900万円", tags: ["残業月15h以下", "完全週休2日制", "インセンティブ支給あり"] },
+      { title: "事業開発", company: "上場ベンチャー企業 / 東京・渋谷", salary: "年収：600〜1000万円", tags: ["残業月20h以下", "裁量労働制", "ストックオプションあり"] }
+    ],
+    "リモート・在宅で働きたい": [
+      { title: "営業企画", company: "外資系IT企業 / 東京・港区", salary: "年収：650〜850万円", tags: ["フルリモート可", "フレックスタイム制", "インセンティブ支給あり"] },
+      { title: "マーケティングマネージャー", company: "上場メーカー / 東京・渋谷", salary: "年収：700〜900万円", tags: ["リモート週3回OK", "完全週休2日制", "残業月20h以下"] },
+      { title: "事業開発マネージャー", company: "大手IT企業 / フルリモート", salary: "年収：600〜1000万円", tags: ["フルリモート可", "裁量労働制", "ストックオプションあり"] }
+    ],
+    "やりがい・成長できる環境に移りたい": [
+      { title: "営業部長候補", company: "上場SaaS企業 / 東京・渋谷", salary: "年収：700〜1000万円", tags: ["経営層と近い環境", "ストックオプションあり", "インセンティブ支給あり"] },
+      { title: "事業責任者候補", company: "大手グループ新規事業 / 東京・丸の内", salary: "年収：650〜900万円", tags: ["新規事業立ち上げ制度あり", "裁量労働制", "年間休日125日"] },
+      { title: "マーケティング部長候補", company: "外資系メーカー / 東京・港区", salary: "年収：600〜1000万円", tags: ["グローバルな環境", "裁量権の大きい環境", "リモート週3回OK"] }
+    ],
+    "大手・安定した企業に転職したい": [
+      { title: "営業マネージャー", company: "東証プライム上場企業 / 東京・丸の内", salary: "年収：650〜850万円", tags: ["従業員5000名以上", "インセンティブ支給あり", "退職金制度あり"] },
+      { title: "経営企画", company: "大手総合商社グループ / 東京・丸の内", salary: "年収：700〜900万円", tags: ["設立40年以上", "完全週休2日制", "リモート週2回OK"] },
+      { title: "事業開発", company: "大手ITグループ企業 / 東京・渋谷", salary: "年収：600〜1000万円", tags: ["従業員3000名以上", "裁量労働制", "ストックオプションあり"] }
+    ],
+    "営業以外の職種に挑戦したい": [
+      { title: "法人営業マネージャー", company: "上場SaaS企業 / 東京・渋谷", salary: "年収：650〜850万円", tags: ["営業経験者歓迎", "インセンティブ支給あり", "マネージャー候補歓迎"] },
+      { title: "事業開発", company: "外資系IT企業 / 東京・港区", salary: "年収：700〜1000万円", tags: ["営業経験者歓迎", "裁量権大きい環境", "ストックオプションあり"] },
+      { title: "ITコンサルタント", company: "大手コンサルティングファーム / 東京・丸の内", salary: "年収：600〜900万円", tags: ["営業経験者歓迎", "研修制度充実", "リモート週3回OK"] }
+    ]
+  }
+};
+
+// ===== Salary Mapping =====
+function getSalaryKey(salaryChoice) {
+  if (salaryChoice === "年収300万円未満" || salaryChoice === "年収300〜450万円") return "300";
+  if (salaryChoice === "年収450〜600万円") return "450";
+  return "600";
+}
+
+// ===== Chat Flow Definition =====
+const STEPS = [
+  {
+    id: "step0",
+    bot: "こんにちは！👋\n私は求人紹介のAIアドバイザーです。\n\nいくつか質問に答えるだけで\n📌今より年収アップや・自分に合った働き方ができる「内定可能性の高い」求人\nをご提案します！\n\nさっそく始めますか？",
+    choices: ["始める！", "どんなことができるの？"]
+  },
+  {
+    id: "step0_info",
+    bot: "このサービスでは、あなたの現在の状況と希望条件をもとに、内定の可能性が高い求人をAIが診断してご提案します！\n\n✅ 完全無料\n✅ しつこい連絡なし\n✅ 1分で診断完了\n\nさっそく始めましょう！",
+    choices: ["始める！"]
+  },
+  {
+    id: "step1",
+    bot: "まず、年齢を教えてください！\n年齢に合った求人をご提案します😊",
+    choices: ["20歳未満", "20〜24歳", "25〜29歳", "30〜34歳", "35歳以上"]
+  },
+  {
+    id: "step2",
+    bot: "今どんな営業をされていますか？💼\n一番近いものを選んでください！",
+    choices: ["新規開拓営業", "ルート・既存顧客営業", "インサイドセールス", "カウンターセールス", "代理店・パートナー営業", "テクニカルセールス", "カスタマーサクセス", "営業以外の仕事", "現在は求職中"]
+  },
+  {
+    id: "step3",
+    bot: "現在の年収帯を教えてください💰\n※おおよそで大丈夫です！",
+    choices: ["年収300万円未満", "年収300〜450万円", "年収450〜600万円", "年収600万円以上"]
+  },
+  {
+    id: "step4",
+    bot: "何ヶ月以内に転職したいですか？📅",
+    choices: ["すぐにでも！", "3ヶ月以内", "半年以内", "まだ考えてない"]
+  },
+  {
+    id: "step5",
+    bot: "年収の他に、転職で最も叶えたいことを一つ教えてください！🎯",
+    choices: ["残業を減らしたい", "リモート・在宅で働きたい", "やりがい・成長できる環境に移りたい", "大手・安定した企業に転職したい", "営業以外の職種に挑戦したい"]
+  }
+];
+
+// ===== App State =====
+let currentStepIndex = 0;
+let answers = {};
+
+// ===== DOM Elements =====
+const toggleBtn = document.getElementById("chatbotToggle");
+const chatWindow = document.getElementById("chatbotWindow");
+const closeBtn = document.getElementById("chatbotClose");
+const messagesEl = document.getElementById("chatbotMessages");
+
+// ===== Open / Close =====
+toggleBtn.addEventListener("click", () => {
+  chatWindow.classList.add("open");
+  toggleBtn.classList.add("active");
+  if (messagesEl.children.length === 0) startChat();
+});
+closeBtn.addEventListener("click", () => {
+  chatWindow.classList.remove("open");
+  toggleBtn.classList.remove("active");
+});
+
+// ===== Chat Logic =====
+function scrollToBottom() {
+  requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
+}
+
+function addBotMessage(text) {
+  const div = document.createElement("div");
+  div.className = "msg msg-bot";
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function addUserMessage(text) {
+  const div = document.createElement("div");
+  div.className = "msg msg-user";
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function showTyping() {
+  const div = document.createElement("div");
+  div.className = "typing";
+  div.id = "typingIndicator";
+  div.innerHTML = "<span></span><span></span><span></span>";
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+function addChoices(choices, onSelect) {
+  const container = document.createElement("div");
+  container.className = "choices";
+  choices.forEach(text => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = text;
+    btn.addEventListener("click", () => {
+      container.remove();
+      onSelect(text);
+    });
+    container.appendChild(btn);
+  });
+  messagesEl.appendChild(container);
+  scrollToBottom();
+}
+
+function showJobCards(salaryChoice, purposeChoice) {
+  const key = getSalaryKey(salaryChoice);
+  const cards = JOB_CARDS[key][purposeChoice];
+
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addBotMessage("あなたの回答をもとに、内定の可能性が高い求人を3件ピックアップしました！🎉");
+
+    setTimeout(() => {
+      const container = document.createElement("div");
+      container.className = "job-cards-container";
+      cards.forEach(card => {
+        const el = document.createElement("div");
+        el.className = "job-card";
+        el.innerHTML = `
+          <div class="job-card-title">${card.title}</div>
+          <div class="job-card-company">${card.company}</div>
+          <div class="job-card-salary">${card.salary}</div>
+          <div class="job-card-tags">
+            ${card.tags.map(t => `<span class="job-card-tag">${t}</span>`).join("")}
+          </div>
+        `;
+        container.appendChild(el);
+      });
+      messagesEl.appendChild(container);
+      scrollToBottom();
+
+      setTimeout(() => {
+        addBotMessage("気になる求人はありましたか？\n\nより詳しい求人情報や、あなたに合った非公開求人をご紹介するために、簡単な情報をご入力ください📝\n\n✅ 完全無料\n✅ しつこい連絡は一切しません");
+        setTimeout(() => showForm(), 500);
+      }, 800);
+    }, 400);
+  }, 1000);
+}
+
+function showForm() {
+  const container = document.createElement("div");
+  container.className = "chatbot-form";
+  container.innerHTML = `
+    <h3>無料キャリア相談に申し込む</h3>
+    <div class="form-group">
+      <label>お名前<span class="required">*必須</span></label>
+      <input type="text" id="formName" placeholder="山田 太郎">
+    </div>
+    <div class="form-group">
+      <label>メールアドレス<span class="required">*必須</span></label>
+      <input type="email" id="formEmail" placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+      <label>電話番号<span class="required">*必須</span></label>
+      <input type="tel" id="formPhone" placeholder="090-1234-5678">
+    </div>
+    <div class="form-group">
+      <label>ご要望・お悩みなど（任意）</label>
+      <textarea id="formNote" placeholder="気になる業界や働き方など、何でもお気軽にどうぞ"></textarea>
+    </div>
+    <button class="form-submit" id="formSubmit">無料で相談する</button>
+  `;
+  messagesEl.appendChild(container);
+  scrollToBottom();
+
+  document.getElementById("formSubmit").addEventListener("click", handleFormSubmit);
+}
+
+function handleFormSubmit() {
+  const name = document.getElementById("formName").value.trim();
+  const email = document.getElementById("formEmail").value.trim();
+  const phone = document.getElementById("formPhone").value.trim();
+  const note = document.getElementById("formNote").value.trim();
+
+  if (!name || !email || !phone) {
+    alert("お名前・メールアドレス・電話番号は必須です。");
+    return;
+  }
+
+  const submitBtn = document.getElementById("formSubmit");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "送信中...";
+
+  // Collect all data
+  const formData = { ...answers, name, email, phone, note };
+  console.log("送信データ:", formData);
+
+  setTimeout(() => {
+    submitBtn.textContent = "送信完了！";
+
+    setTimeout(() => {
+      addBotMessage("お申し込みありがとうございます！🎉\n\n担当のキャリアアドバイザーから、1〜3営業日以内にご連絡いたします。\n\nあなたにぴったりの求人を一緒に見つけましょう！💪");
+    }, 300);
+  }, 800);
+}
+
+// ===== Step Execution =====
+function runStep(index) {
+  const step = STEPS[index];
+  if (!step) return;
+
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addBotMessage(step.bot);
+
+    setTimeout(() => {
+      addChoices(step.choices, (selected) => {
+        addUserMessage(selected);
+        answers[step.id] = selected;
+
+        // Handle branching at step0
+        if (step.id === "step0" && selected === "どんなことができるの？") {
+          currentStepIndex = 1; // step0_info
+          setTimeout(() => runStep(currentStepIndex), 400);
+          return;
+        }
+
+        // After step0_info, go to step1 (index 2)
+        if (step.id === "step0_info") {
+          currentStepIndex = 2;
+          setTimeout(() => runStep(currentStepIndex), 400);
+          return;
+        }
+
+        // After step5, show job cards
+        if (step.id === "step5") {
+          showJobCards(answers["step3"], selected);
+          return;
+        }
+
+        // Normal flow: next step
+        currentStepIndex++;
+        // Skip step0_info in normal flow
+        if (STEPS[currentStepIndex]?.id === "step0_info") currentStepIndex++;
+        setTimeout(() => runStep(currentStepIndex), 400);
+      });
+    }, 300);
+  }, 600);
+}
+
+function startChat() {
+  currentStepIndex = 0;
+  answers = {};
+  runStep(0);
+}
+</script>
+</body>
+</html>
