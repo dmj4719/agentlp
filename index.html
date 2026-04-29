@@ -11,7 +11,7 @@
 /* ===== Reset ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: 'Noto Sans JP', sans-serif; color: #222; background: #f0f0f0; max-width: 100vw; overflow-x: hidden; }
+body { font-family: 'Noto Sans JP', sans-serif; color: #222; background: #fff; max-width: 100vw; overflow-x: hidden; }
 img { max-width: 100%; height: auto; display: block; }
 a { text-decoration: none; color: inherit; }
 
@@ -130,12 +130,27 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* CTA */
-.cta-wrap { text-align: center; padding-bottom: 10px; }
-.cta-img {
-  width: 100%; max-width: 340px; cursor: pointer;
-  transition: opacity 0.2s;
+.cta-wrap { text-align: center; padding-bottom: 10px; position: relative; }
+.cta-upper-block {
+  position: relative; margin-bottom: 8px;
+  display: inline-block;
 }
-.cta-img:hover { opacity: 0.9; }
+.cta-upper-text {
+  font-size: 13px; font-weight: 700; color: #222;
+  line-height: 1.6; text-align: center;
+  background: #fff; border-radius: 20px;
+  padding: 6px 16px; display: inline-block;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.cta-upper-text::after {
+  content: ''; position: absolute; bottom: -6px;
+  left: 50%; transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #fff;
+}
+.cta-upper-text strong { font-weight: 900; }
 .cta-btn {
   display: flex; align-items: center; justify-content: center;
   gap: 8px; background: #c92917; color: #fff;
@@ -370,23 +385,73 @@ a { text-decoration: none; color: inherit; }
 }
 .cb-body .blue { color: #2b6cb6; }
 
-/* Phone Mock - use Figma SVG */
+/* Phone Mock - CSS */
 .cb-phone-area {
   display: flex; flex-direction: column; align-items: center;
   margin-bottom: 36px;
 }
-.cb-phone-img {
-  width: 280px; max-width: 72vw; height: auto;
+.cb-phone-mock {
+  width: 240px; position: relative;
+}
+.cb-phone-device {
+  width: 100%; aspect-ratio: 9/16;
+  background: #1a1a1a; border-radius: 28px;
+  border: 4px solid #333; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.cb-phone-screen {
+  width: 92%; height: 94%; background: #f0f4ff;
+  border-radius: 20px; overflow: hidden;
+}
+.cb-phone-screen-top {
+  background: #2b6cb6; color: #fff; padding: 12px;
+  font-size: 10px; text-align: center; font-weight: 700;
+}
+.cb-phone-screen-body {
+  padding: 10px; font-size: 8px; color: #888;
+}
+.cb-speech-bubble {
+  background: #fff; border: 2px solid #2b6cb6;
+  border-radius: 10px; padding: 14px 18px;
+  margin-top: -50px; position: relative; z-index: 3;
+  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.cb-speech-bubble p {
+  font-size: 15px; font-weight: 700; color: #2b6cb6; line-height: 1.7;
+}
+.cb-speech-bubble .tap {
+  font-size: 22px; font-weight: 900; position: relative; top: 2px;
+  letter-spacing: 2px;
+}
+.cb-tap-icon {
+  text-align: center; margin-top: 8px;
+}
+.cb-tap-icon span {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid #2b6cb6; background: #fff; font-size: 18px;
 }
 
-/* Chat Explain Bubble - use Figma SVG */
+/* Chat Explain Bubble - CSS */
 .cb-explain {
-  display: flex; justify-content: center;
+  display: flex; gap: 12px; align-items: flex-start;
   margin-bottom: 36px;
 }
-.cb-explain-img {
-  width: 100%; max-width: 340px; height: auto;
+.cb-explain-bubble {
+  background: #fff; border: 2px solid #2b6cb6;
+  border-radius: 8px; padding: 16px; flex: 1;
 }
+.cb-explain-bubble p {
+  font-size: 14px; font-weight: 700; color: #222; line-height: 1.7;
+}
+.cb-explain-bubble .blue { color: #2b6cb6; }
+.cb-explain-icon {
+  width: 50px; height: 50px; background: #2b6cb6;
+  border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.cb-explain-icon svg { width: 28px; height: 28px; fill: #fff; }
 
 /* CTA Text */
 .cb-cta-text {
@@ -669,7 +734,10 @@ a { text-decoration: none; color: inherit; }
       <!-- 注釈はバッジSVG内に含まれている -->
 
       <div class="cta-wrap">
-        <img src="assets/cta-section.svg" alt="無料相談はこちらから" class="cta-img" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+        <div class="cta-upper-block">
+          <div class="cta-upper-text">今なら<strong>営業出身者に特化</strong>した<br><strong>書類選考/面接対策</strong>の<strong>特典あり！</strong></div>
+        </div>
+        <a href="#contact" class="cta-btn">無料相談はこちらから<span class="arrow"></span></a>
       </div>
     </div>
   </section>
@@ -758,11 +826,28 @@ a { text-decoration: none; color: inherit; }
     <p class="cb-body">業界、業種等の条件を少し変えるだけで、<br><span class="blue">年収も働き方も別世界のようになった人<br>続出中</span>です！<br><br>まずは、あなたの希望条件を入力して<br>募集中の求人を見てみよう！</p>
 
     <div class="cb-phone-area">
-      <img src="assets/phone-mock.svg" alt="チャットボットの使い方" class="cb-phone-img">
+      <div class="cb-phone-mock">
+        <div class="cb-phone-device">
+          <div class="cb-phone-screen">
+            <div class="cb-phone-screen-top">キャリアアップを目指す！</div>
+            <div class="cb-phone-screen-body">チャットボット画面</div>
+          </div>
+        </div>
+      </div>
+      <div class="cb-speech-bubble">
+        <p>右下のアイコンを<span class="tap">タップ</span>してみて！<br>チャットが開くよ！</p>
+      </div>
+      <div class="cb-tap-icon"><span>👆</span></div>
     </div>
 
     <div class="cb-explain">
-      <img src="assets/chat-explain.svg" alt="あなたの条件を入力して求人を確認" class="cb-explain-img">
+      <div class="cb-explain-bubble">
+        <p>あなたの現在と、希望の条件を入力することで、希望に合った内定可能性の高い求人が簡単にわかる！</p>
+        <p style="margin-top:12px;"><span class="blue">まずはどんなキャリアが実現可能なのか確かめてみよう！</span></p>
+      </div>
+      <div class="cb-explain-icon">
+        <svg viewBox="0 0 30 30" fill="none"><path d="M15.467 6.245c0-.179-.072-.35-.2-.477a.688.688 0 00-.964 0 .669.669 0 00-.2.477v.674h-3.238a2.242 2.242 0 00-2.216 2.189v3.704a2.242 2.242 0 002.216 2.189h7.84a2.242 2.242 0 002.217-2.189V9.107a2.242 2.242 0 00-2.216-2.189H15.467v-.673zM9.501 17.02a2.242 2.242 0 00-2.216 2.189v.303c0 1.462.734 2.723 2.054 3.591 1.3.856 3.151 1.326 5.446 1.326s4.146-.47 5.446-1.326c1.32-.868 2.054-2.129 2.054-3.59v-.304a2.242 2.242 0 00-2.216-2.189H9.501zm2.898-4.883a1.193 1.193 0 01-1.193-1.178 1.193 1.193 0 012.387 0c0 .652-.534 1.178-1.194 1.178zm5.966-1.178c0 .652-.534 1.178-1.193 1.178a1.193 1.193 0 010-2.357c.66 0 1.193.527 1.193 1.179z" fill="#fff"/></svg>
+      </div>
     </div>
 
     <p class="cb-cta-text"><span class="gray">キャリアアドバイザーとの面談を通じて<br>より具体的なお話をさせて頂き、</span><br>あなたに最適な求人をご提案いたします。</p>
