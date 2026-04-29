@@ -16,7 +16,8 @@ img { max-width: 100%; height: auto; display: block; }
 a { text-decoration: none; color: inherit; }
 
 /* ===== Layout ===== */
-.lp { max-width: 390px; margin: 0 auto; background: #fff; position: relative; }
+.lp { max-width: 100%; margin: 0 auto; background: #fff; position: relative; }
+@media (min-width: 480px) { .lp { max-width: 390px; } }
 
 /* ===== Header ===== */
 .header {
@@ -130,27 +131,12 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* CTA */
-.cta-wrap { text-align: center; padding-bottom: 10px; position: relative; }
-.cta-upper-block {
-  position: relative; margin-bottom: 8px;
-  display: inline-block;
+.cta-wrap { text-align: center; padding-bottom: 10px; }
+.cta-design-img {
+  width: 100%; max-width: 340px; cursor: pointer;
+  transition: opacity 0.2s; margin: 0 auto;
 }
-.cta-upper-text {
-  font-size: 13px; font-weight: 700; color: #222;
-  line-height: 1.6; text-align: center;
-  background: #fff; border-radius: 20px;
-  padding: 6px 16px; display: inline-block;
-  position: relative;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-.cta-upper-text::after {
-  content: ''; position: absolute; bottom: -6px;
-  left: 50%; transform: translateX(-50%);
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top: 7px solid #fff;
-}
-.cta-upper-text strong { font-weight: 900; }
+.cta-design-img:hover { opacity: 0.9; }
 .cta-btn {
   display: flex; align-items: center; justify-content: center;
   gap: 8px; background: #c92917; color: #fff;
@@ -385,52 +371,13 @@ a { text-decoration: none; color: inherit; }
 }
 .cb-body .blue { color: #2b6cb6; }
 
-/* Phone Mock - CSS */
+/* Phone Mock - Image */
 .cb-phone-area {
   display: flex; flex-direction: column; align-items: center;
   margin-bottom: 36px;
 }
-.cb-phone-mock {
-  width: 240px; position: relative;
-}
-.cb-phone-device {
-  width: 100%; aspect-ratio: 9/16;
-  background: #1a1a1a; border-radius: 28px;
-  border: 4px solid #333; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-.cb-phone-screen {
-  width: 92%; height: 94%; background: #f0f4ff;
-  border-radius: 20px; overflow: hidden;
-}
-.cb-phone-screen-top {
-  background: #2b6cb6; color: #fff; padding: 12px;
-  font-size: 10px; text-align: center; font-weight: 700;
-}
-.cb-phone-screen-body {
-  padding: 10px; font-size: 8px; color: #888;
-}
-.cb-speech-bubble {
-  background: #fff; border: 2px solid #2b6cb6;
-  border-radius: 10px; padding: 14px 18px;
-  margin-top: -50px; position: relative; z-index: 3;
-  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-.cb-speech-bubble p {
-  font-size: 15px; font-weight: 700; color: #2b6cb6; line-height: 1.7;
-}
-.cb-speech-bubble .tap {
-  font-size: 22px; font-weight: 900; position: relative; top: 2px;
-  letter-spacing: 2px;
-}
-.cb-tap-icon {
-  text-align: center; margin-top: 8px;
-}
-.cb-tap-icon span {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 2px solid #2b6cb6; background: #fff; font-size: 18px;
+.cb-phone-img {
+  width: 280px; max-width: 72vw; height: auto;
 }
 
 /* Chat Explain Bubble - CSS */
@@ -734,10 +681,7 @@ a { text-decoration: none; color: inherit; }
       <!-- 注釈はバッジSVG内に含まれている -->
 
       <div class="cta-wrap">
-        <div class="cta-upper-block">
-          <div class="cta-upper-text">今なら<strong>営業出身者に特化</strong>した<br><strong>書類選考/面接対策</strong>の<strong>特典あり！</strong></div>
-        </div>
-        <a href="#contact" class="cta-btn">無料相談はこちらから<span class="arrow"></span></a>
+        <a href="#contact"><img src="assets/cta-design.png" alt="無料相談はこちらから" class="cta-design-img"></a>
       </div>
     </div>
   </section>
@@ -826,18 +770,7 @@ a { text-decoration: none; color: inherit; }
     <p class="cb-body">業界、業種等の条件を少し変えるだけで、<br><span class="blue">年収も働き方も別世界のようになった人<br>続出中</span>です！<br><br>まずは、あなたの希望条件を入力して<br>募集中の求人を見てみよう！</p>
 
     <div class="cb-phone-area">
-      <div class="cb-phone-mock">
-        <div class="cb-phone-device">
-          <div class="cb-phone-screen">
-            <div class="cb-phone-screen-top">キャリアアップを目指す！</div>
-            <div class="cb-phone-screen-body">チャットボット画面</div>
-          </div>
-        </div>
-      </div>
-      <div class="cb-speech-bubble">
-        <p>右下のアイコンを<span class="tap">タップ</span>してみて！<br>チャットが開くよ！</p>
-      </div>
-      <div class="cb-tap-icon"><span>👆</span></div>
+      <img src="assets/phone-mock.png" alt="チャットボットの使い方" class="cb-phone-img">
     </div>
 
     <div class="cb-explain">
